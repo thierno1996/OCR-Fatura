@@ -86,6 +86,7 @@ class ImageWithLines(Image):
 
             # box_tuple = (x, y-self.y, width, height) these are the right coordinates in case the image widget
             # has the same size as the texture
+            # the rectangle is evenly aligned but the texture is not, therefore some items will always be distorted
 
             # I subtract the y pos from the self.y to get the actual pos, why I don't really know ?
 
@@ -153,8 +154,8 @@ class ImageDisplayerApp(MDApp):
         button.bind(on_release=self.extract_and_display_region)
         self.back_button.bind(on_release=self.go_back)
         self.root_layout.add_widget(self.box_for_buttons)
-        self.box_for_buttons.add_widget(self.back_button)
         self.box_for_buttons.add_widget(close_button)
+        self.box_for_buttons.add_widget(self.back_button)
         self.box_for_buttons.add_widget(button)
         self.box_for_buttons.add_widget(read_img_button)
         self.scrollable_product_list = ScrollableProductList()
