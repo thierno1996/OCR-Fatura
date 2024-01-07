@@ -1,3 +1,4 @@
+import os
 import time
 from kivy.core.window import Window
 from PIL import Image as PILImage
@@ -23,7 +24,7 @@ class ImageWithLines(Image):
         super().__init__(**kwargs)
         self.copied_image = None
         self.line = None
-        self.source = "bill.jpg"  # r"C:\Users\casper\Desktop\second.png"
+        #self.source = "bill.jpg"  # r"C:\Users\casper\Desktop\second.png"
         # self.size_hint = (None, None)
         # self.width = self.texture_size[0]
         # self.height = self.texture_size[1]
@@ -74,25 +75,26 @@ class ImageWithLines(Image):
             self.line = Line(points=([self.bl_x, self.bl_y]), width=2)
 
     def extract_region(self, filename):
-        scale_x = self.texture_size[0] / self.norm_image_size[0]
-        scale_y = self.texture_size[1] / self.norm_image_size[1]
+        # scale_x = self.texture_size[0] / self.norm_image_size[0]
+        # scale_y = self.texture_size[1] / self.norm_image_size[1]
+        # left_and_right_empty_space = (self.width - self.norm_image_size[0]) / 2
+        # above_and_below_empty_space = (self.height - self.norm_image_size[1]) / 2
+
         if self.line is not None:
             original_texture = self.texture
             width, height = self.calculate_rectangle_size()
             x, y = self.get_rectangle_position()
 
-            box_tuple = (x, y + self.y + 10, width * scale_x - self.left_and_right_empty_space,
-                         height * scale_y - self.above_and_below_empty_space)
+            box_tuple = (x / 2, y - self.y, width, height)
 
-            # box_tuple = (x, y-self.y, width, height) these are the right coordinates in case the image widget
-            # has the same size as the texture
-            # the rectangle is evenly aligned but the texture is not, therefore some items will always be distorted
+            print(f"pos_x : {self.bl_x - self.x}, pos_y : {self.bl_y - self.y}")
 
-            # I subtract the y pos from the self.y to get the actual pos, why I don't really know ?
+            print(f"size_x : {self.size[0]}, size_y : {self.size[1]}")
+
+            print("----------------------------------------------------------------------")
 
             copied_texture = original_texture.get_region(*box_tuple)
             self.copied_image = Image(texture=copied_texture)
-
             image_data = np.frombuffer(copied_texture.pixels, dtype=np.uint8)
             image_data = image_data.reshape(copied_texture.size[1], copied_texture.size[0], 4)
             pil_image = PILImage.fromarray(image_data)
@@ -167,8 +169,6 @@ class ImageDisplayerApp(MDApp):
 
     def extract_and_display_region(self, *args):
         name = "img_" + str(int(time.time()))  # Creating a unique name
-        if self.image_with_lines.copied_image:
-            self.root_layout.remove_widget(self.image_with_lines.copied_image)
 
         self.image_with_lines.extract_region(name)
         self.image_with_lines.source = name + ".png"
@@ -186,17 +186,19 @@ class ImageDisplayerApp(MDApp):
     def select_path(self, path):
         self.previous_img = path
         print(f"Selected File: {path}")
+        new_file = str(int(time.time())) + "modified.jpg"
         self.root_layout.remove_widget(self.box_for_selection)
-        self.image_with_lines.source = path
+        self.resize_image(path, new_file, (625, 681.25))
+        self.image_with_lines.source = new_file
         self.root_layout.add_widget(self.image_with_lines, 1)
         self.file_manager.close()
+        self.previous_img = new_file
 
     def exit_manager(self, *args):
         print("File manager is closed or exited")
         self.file_manager.close()
 
     def go_back(self, *args):
-
         self.image_with_lines.source = self.previous_img
 
     def close_image_widget(self, *args):
@@ -204,6 +206,7 @@ class ImageDisplayerApp(MDApp):
             self.root_layout.remove_widget(self.image_with_lines)
         if self.box_for_selection not in self.root_layout.children:
             self.root_layout.add_widget(self.box_for_selection, 1)
+            self.delete_png_files(".", "modified.jpg")
 
     def connect_to_server(self, *args):
         url = "http://127.0.0.1:5000/upload"
@@ -224,6 +227,39 @@ class ImageDisplayerApp(MDApp):
                 for product, values in response_json.items():
                     print(f"{product}: Quantity={values[0]}, Price={values[1]}")
                     print("------------------------------------------")
+
+    def delete_png_files(self, directory,  structure):
+        try:
+            # Get the list of files in the directory
+            files = os.listdir(directory)
+
+            # Loop through each file
+            for file in files:
+                # Check if the file has a ".png" extension or contains the specified structure
+                if file.endswith(".png") or structure in file:
+                    # Construct the full path to the file
+                    file_path = os.path.join(directory, file)
+
+                    # Delete the file
+                    os.remove(file_path)
+
+                    print(f"Deleted: {file_path}")
+
+            print(f"All .png files and files with structure '{structure}' deleted successfully.")
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+    def resize_image(self, input_path, output_path, target_size):
+        try:
+            with PILImage.open(input_path) as img:
+                img.thumbnail(target_size)
+                img.save(output_path)
+
+                print(f"Image resized and saved to {output_path}")
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
 
 if __name__ == '__main__':
