@@ -24,7 +24,7 @@ class ImageWithLines(Image):
         super().__init__(**kwargs)
         self.copied_image = None
         self.line = None
-        #self.source = "bill.jpg"  # r"C:\Users\casper\Desktop\second.png"
+        # self.source = "bill.jpg"  # r"C:\Users\casper\Desktop\second.png"
         # self.size_hint = (None, None)
         # self.width = self.texture_size[0]
         # self.height = self.texture_size[1]
@@ -167,6 +167,18 @@ class ImageDisplayerApp(MDApp):
 
         return self.root_layout
 
+    def add_result_data(self):
+        if self.image_with_lines in self.root_layout.children:
+            self.root_layout.remove_widget(self.image_with_lines)
+
+        if self.box_for_selection in self.root_layout.children:
+            self.root_layout.remove_widget(self.box_for_selection)
+
+        if self.scrollable_product_list not in self.root_layout.children:
+            # self.scrollable_product_list.clear_widgets()
+            #self.scrollable_product_list.add_product("Milk", 20, 30)
+            self.root_layout.add_widget(self.scrollable_product_list, 1)
+
     def extract_and_display_region(self, *args):
         name = "img_" + str(int(time.time()))  # Creating a unique name
 
@@ -188,6 +200,7 @@ class ImageDisplayerApp(MDApp):
         print(f"Selected File: {path}")
         new_file = str(int(time.time())) + "modified.jpg"
         self.root_layout.remove_widget(self.box_for_selection)
+
         self.resize_image(path, new_file, (625, 681.25))
         self.image_with_lines.source = new_file
         self.root_layout.add_widget(self.image_with_lines, 1)
@@ -204,6 +217,9 @@ class ImageDisplayerApp(MDApp):
     def close_image_widget(self, *args):
         if self.image_with_lines in self.root_layout.children:
             self.root_layout.remove_widget(self.image_with_lines)
+        if self.scrollable_product_list in self.root_layout.children:
+            self.scrollable_product_list.clear_widgets()
+            self.root_layout.remove_widget(self.scrollable_product_list)
         if self.box_for_selection not in self.root_layout.children:
             self.root_layout.add_widget(self.box_for_selection, 1)
             self.delete_png_files(".", "modified.jpg")
@@ -225,10 +241,13 @@ class ImageDisplayerApp(MDApp):
 
             if response_json:
                 for product, values in response_json.items():
+                    self.scrollable_product_list.add_product(product, values[0], values[1])
+
                     print(f"{product}: Quantity={values[0]}, Price={values[1]}")
                     print("------------------------------------------")
+            self.add_result_data()
 
-    def delete_png_files(self, directory,  structure):
+    def delete_png_files(self, directory, structure):
         try:
             # Get the list of files in the directory
             files = os.listdir(directory)
